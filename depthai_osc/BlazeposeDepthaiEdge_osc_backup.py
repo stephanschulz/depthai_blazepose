@@ -105,12 +105,11 @@ class BlazeposeDepthai:
         for oneDevice in dai.Device.getAllAvailableDevices():
             print(f"{oneDevice.getMxId()} {oneDevice.state}")
 #            print(f"{oneDevice.DeviceInfo()} {oneDevice.state}")
-                    
-        self.pipeline = dai.Pipeline()
+            
         device_info = dai.DeviceInfo("10.100.0.21")
-        self.device = dai.Device(self.pipeline, device_info)
+#        self.device1 = dai.Device(dai.Pipeline(), device_info)
 #        device_info = dai.DeviceInfo("10.100.0.21")
-#        self.device = dai.Device()
+        self.device = dai.Device()
 #        device_info = dai.DeviceInfo("10.100.0.21")
 #        self.device = dai.Device(dai.Pipeline(), device_info)
         
@@ -118,8 +117,7 @@ class BlazeposeDepthai:
 #        self.device = dai.Device(device_info)
         
         self.xyz = False
-        self.fps = FPS()
-        
+
         if input_src == None or input_src == "rgb" or input_src == "rgb_laconic":
             self.input_type = "rgb" # OAK* internal color camera
             self.laconic = input_src == "rgb_laconic" # Camera frames are not sent to the host      
@@ -202,13 +200,11 @@ class BlazeposeDepthai:
 #        with depthai.Device(pipeline, device_info) as device:
 #        self.device.devInfo("10.100.0.21");
         usb_speed = self.device.getUsbSpeed()
-#        self.device.startPipeline(self.create_pipeline())
-      
-#        self.device.startPipeline(self.pipeline)
+        self.device.startPipeline(self.create_pipeline())
         print(f"Pipeline started - USB speed: {str(usb_speed).split('.')[-1]}")
 #        device_info = dai.DeviceInfo("10.100.0.21")
 #        self.device.startPipeline(self.create_pipeline(), device_info)
-        self.create_pipeline()
+
 
        
         
@@ -223,7 +219,7 @@ class BlazeposeDepthai:
         # self.q_pre_pd_manip_out = self.device.getOutputQueue(name="pre_pd_manip_out", maxSize=1, blocking=False)
         # self.q_pre_lm_manip_out = self.device.getOutputQueue(name="pre_lm_manip_out", maxSize=1, blocking=False)
 
-#        self.fps = FPS()
+        self.fps = FPS()
 
         self.nb_pd_inferences = 0
         self.nb_lm_inferences = 0
@@ -233,13 +229,10 @@ class BlazeposeDepthai:
     def create_pipeline(self):
         print("Creating pipeline...")
         # Start defining a pipeline
-#        pipeline = dai.Pipeline()
-        self.pipeline.setOpenVINOVersion(dai.OpenVINO.Version.VERSION_2021_4)
+        pipeline = dai.Pipeline()
+        pipeline.setOpenVINOVersion(dai.OpenVINO.Version.VERSION_2021_4)
         self.pd_input_length = 224
         self.lm_input_length = 256
-#        device_info = dai.DeviceInfo("10.100.0.21"
-#        self.device.devInfo(device_info);
-#        self.device.device_info(device_info);
 
         irState = self.device.setIrFloodLightBrightness(1000);
         print("setIrFloodLightBrightness",irState)
@@ -249,7 +242,7 @@ class BlazeposeDepthai:
         
         # ColorCamera
         print("Creating Color Camera...")
-        cam = self.pipeline.create(dai.node.ColorCamera) 
+        cam = pipeline.create(dai.node.ColorCamera) 
         cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
         cam.setInterleaved(False)
         cam.setIspScale(self.scale_nd[0], self.scale_nd[1])
@@ -269,7 +262,7 @@ class BlazeposeDepthai:
             cam.setPreviewSize(self.img_w, self.img_h)
 
         if not self.laconic:
-            cam_out = self.pipeline.create(dai.node.XLinkOut)
+            cam_out = pipeline.create(dai.node.XLinkOut)
             cam_out.setStreamName("cam_out")
             cam_out.input.setQueueSize(1)
             cam_out.input.setBlocking(False)
@@ -277,7 +270,7 @@ class BlazeposeDepthai:
 
 
         # Define manager script node
-        manager_script = self.pipeline.create(dai.node.Script)
+        manager_script = pipeline.create(dai.node.Script)
         manager_script.setScript(self.build_manager_script())
 
         if self.xyz:
@@ -290,17 +283,17 @@ class BlazeposeDepthai:
             cam.initialControl.setManualFocus(calib_lens_pos)
 
             mono_resolution = dai.MonoCameraProperties.SensorResolution.THE_400_P
-            left = self.pipeline.createMonoCamera()
+            left = pipeline.createMonoCamera()
             left.setBoardSocket(dai.CameraBoardSocket.LEFT)
             left.setResolution(mono_resolution)
             left.setFps(self.internal_fps)
 
-            right = self.pipeline.createMonoCamera()
+            right = pipeline.createMonoCamera()
             right.setBoardSocket(dai.CameraBoardSocket.RIGHT)
             right.setResolution(mono_resolution)
             right.setFps(self.internal_fps)
 
-            stereo = self.pipeline.createStereoDepth()
+            stereo = pipeline.createStereoDepth()
             stereo.setConfidenceThreshold(230)
             # LR-check is required for depth alignment
             stereo.setLeftRightCheck(True)
@@ -310,7 +303,7 @@ class BlazeposeDepthai:
             # Otherwise : [critical] Fatal error. Please report to developers. Log: 'StereoSipp' '533'
             # stereo.setMedianFilter(dai.StereoDepthProperties.MedianFilter.MEDIAN_OFF)
 
-            spatial_location_calculator = self.pipeline.createSpatialLocationCalculator()
+            spatial_location_calculator = pipeline.createSpatialLocationCalculator()
             spatial_location_calculator.setWaitForConfigInput(True)
             spatial_location_calculator.inputDepth.setBlocking(False)
             spatial_location_calculator.inputDepth.setQueueSize(1)
@@ -325,7 +318,7 @@ class BlazeposeDepthai:
 
         # Define pose detection pre processing (resize preview to (self.pd_input_length, self.pd_input_length))
         print("Creating Pose Detection pre processing image manip...")
-        pre_pd_manip = self.pipeline.create(dai.node.ImageManip)
+        pre_pd_manip = pipeline.create(dai.node.ImageManip)
         pre_pd_manip.setMaxOutputFrameSize(self.pd_input_length*self.pd_input_length*3)
         pre_pd_manip.setWaitForConfigInput(True)
         pre_pd_manip.inputImage.setQueueSize(1)
@@ -340,7 +333,7 @@ class BlazeposeDepthai:
 
         # Define pose detection model
         print("Creating Pose Detection Neural Network...")
-        pd_nn = self.pipeline.create(dai.node.NeuralNetwork)
+        pd_nn = pipeline.create(dai.node.NeuralNetwork)
         pd_nn.setBlobPath(self.pd_model)
         # Increase threads for detection
         # pd_nn.setNumInferenceThreads(2)
@@ -348,19 +341,19 @@ class BlazeposeDepthai:
        
         # Define pose detection post processing "model"
         print("Creating Pose Detection post processing Neural Network...")
-        post_pd_nn = self.pipeline.create(dai.node.NeuralNetwork)
+        post_pd_nn = pipeline.create(dai.node.NeuralNetwork)
         post_pd_nn.setBlobPath(self.pp_model)
         pd_nn.out.link(post_pd_nn.input)
         post_pd_nn.out.link(manager_script.inputs['from_post_pd_nn'])
 
         # Define link to send result to host 
-        manager_out = self.pipeline.create(dai.node.XLinkOut)
+        manager_out = pipeline.create(dai.node.XLinkOut)
         manager_out.setStreamName("manager_out")
         manager_script.outputs['host'].link(manager_out.input)
 
         # Define landmark pre processing image manip
         print("Creating Landmark pre processing image manip...") 
-        pre_lm_manip = self.pipeline.create(dai.node.ImageManip)
+        pre_lm_manip = pipeline.create(dai.node.ImageManip)
         pre_lm_manip.setMaxOutputFrameSize(self.lm_input_length*self.lm_input_length*3)
         pre_lm_manip.setWaitForConfigInput(True)
         pre_lm_manip.inputImage.setQueueSize(1)
@@ -377,13 +370,13 @@ class BlazeposeDepthai:
         # Define normalization model between ImageManip and landmark model
         # This is a temporary step. Could be removed when support of setFrameType(RGBF16F16F16p) in ImageManip node
         print("Creating DiveideBy255 Neural Network...") 
-        divide_nn = self.pipeline.create(dai.node.NeuralNetwork)
+        divide_nn = pipeline.create(dai.node.NeuralNetwork)
         divide_nn.setBlobPath(self.divide_by_255_model)
         pre_lm_manip.out.link(divide_nn.input) 
 
         # Define landmark model
         print("Creating Landmark Neural Network...") 
-        lm_nn = self.pipeline.create(dai.node.NeuralNetwork)
+        lm_nn = pipeline.create(dai.node.NeuralNetwork)
         lm_nn.setBlobPath(self.lm_model)
         # lm_nn.setNumInferenceThreads(1)
   
@@ -392,7 +385,7 @@ class BlazeposeDepthai:
 
         print("Pipeline created.")
 
-#        return pipeline        
+        return pipeline        
 
     def build_manager_script(self):
         '''
