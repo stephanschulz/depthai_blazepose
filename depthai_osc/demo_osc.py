@@ -76,15 +76,15 @@ osc_sending = oscSender(tracker,
 
 while True:
     # Run blazepose on next frame
-    frame, body = tracker.next_frame()
-    if frame is None: break
+    rgb_frame, right_frame, body = tracker.next_frame()
+    if rgb_frame is None: break
     # Draw 3d skeleton
     osc_sending.update(body)
     #print("args.showVideo",args.showVideo)
 #    if args.showVideo is True:
     if args.showVideo:
        
-        frame = osc_sending.draw(frame, body)
+        frame = osc_sending.draw(rgb_frame, right_frame, body)
         # frame = renderer.draw(frame, body)
         # key = renderer.waitKey(delay=1)
         key = osc_sending.waitKey(delay=1)

@@ -80,14 +80,19 @@ class oscSender:
                         cv2.FONT_HERSHEY_PLAIN, 2, (255,255,0), 2)
                 
         
-    def draw(self, frame, body):
+    def draw(self, rgb_frame, right_frame, body):
         if not self.pause:
-            self.frame = frame
+            self.frame = rgb_frame
+            s_img = cv2.resize(right_frame, (0,0), fx=0.4, fy=0.4) 
+            s_img = cv2.cvtColor(s_img,cv2.COLOR_GRAY2RGB)
+            x_offset=rgb_frame.shape[1]-s_img.shape[1]
+            y_offset=0
+            self.frame[y_offset:y_offset+s_img.shape[0], x_offset:x_offset+s_img.shape[1]] = s_img
             if body:
                 self.draw_landmarks(body)
             self.body = body
         elif self.frame is None:
-            self.frame = frame
+            self.frame = rgb_frame
             self.body = None
         # else: self.frame points to previous frame
         
