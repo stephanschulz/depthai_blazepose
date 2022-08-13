@@ -107,9 +107,9 @@ class BlazeposeDepthai:
 #            print(f"{oneDevice.DeviceInfo()} {oneDevice.state}")
             
 #        device_info = dai.DeviceInfo("10.100.0.21")
-#        self.device = dai.Device()
-        device_info = dai.DeviceInfo("10.100.0.21")
-        self.device = dai.Device(dai.Pipeline(), device_info)
+        self.device = dai.Device()
+#        device_info = dai.DeviceInfo("10.100.0.21")
+#        self.device = dai.Device(dai.Pipeline(), device_info)
         
         self.xyz = False
 
@@ -197,6 +197,9 @@ class BlazeposeDepthai:
         usb_speed = self.device.getUsbSpeed()
         self.device.startPipeline(self.create_pipeline())
         print(f"Pipeline started - USB speed: {str(usb_speed).split('.')[-1]}")
+#        device_info = dai.DeviceInfo("10.100.0.21")
+#        self.device.startPipeline(self.create_pipeline(), device_info)
+
 
        
         
