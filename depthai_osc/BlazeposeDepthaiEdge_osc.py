@@ -214,6 +214,8 @@ class BlazeposeDepthai:
         if not self.laconic:
             self.q_video = self.device.getOutputQueue(name="cam_out", maxSize=1, blocking=False)
             self.q_right_video = self.device.getOutputQueue(name="cam_right_out", maxSize=1, blocking=False)
+#            self.myRight = self.q_right_video.get()
+#            self.rightFrame = self.myRight.getCvFrame() 
         self.q_manager_out = self.device.getOutputQueue(name="manager_out", maxSize=1, blocking=False)
         # For debugging
         # self.q_pre_pd_manip_out = self.device.getOutputQueue(name="pre_pd_manip_out", maxSize=1, blocking=False)
@@ -329,6 +331,7 @@ class BlazeposeDepthai:
         pre_pd_manip.inputImage.setQueueSize(1)
         pre_pd_manip.inputImage.setBlocking(False)
         cam.preview.link(pre_pd_manip.inputImage)
+#        right.out.link(pre_pd_manip.inputImage)
         manager_script.outputs['pre_pd_manip_cfg'].link(pre_pd_manip.inputConfig)
 
         # For debugging
@@ -364,7 +367,7 @@ class BlazeposeDepthai:
         pre_lm_manip.inputImage.setQueueSize(1)
         pre_lm_manip.inputImage.setBlocking(False)
         cam.preview.link(pre_lm_manip.inputImage)
-        
+#        right.out.link(pre_lm_manip.inputImage)
         # For debugging
         # pre_lm_manip_out = pipeline.createXLinkOut()
         # pre_lm_manip_out.setStreamName("pre_lm_manip_out")
