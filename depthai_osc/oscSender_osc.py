@@ -7,6 +7,7 @@ import json
 from pythonosc import udp_client
 from pythonosc.osc_message_builder import OscMessageBuilder
 OSC_ADDRESS = "/depthai_pose"
+OSC_ADDRESS_NOBODY = "/depthai_pose_info"
 
 # LINE_BODY and COLORS_BODY are used when drawing the skeleton in 3D. 
 rgb = {"right":(0,1,0), "left":(1,0,0), "middle":(1,1,0)}
@@ -108,7 +109,7 @@ class oscSender:
     def send_pose(self, client: udp_client, body):
               
         if body is None:
-            client.send_message(OSC_ADDRESS, 0)
+            client.send_message(OSC_ADDRESS_NOBODY, 0)
             return
 
 # https://github.com/attwad/python-osc/blob/master/pythonosc/osc_message_builder.py
@@ -137,23 +138,31 @@ class oscSender:
 #        client.send(msg)
     
 #    send tracking data as json object over OSC
-        data=[]
-        for i,oneLM in enumerate(body.landmarks):
-            if self.is_present(body, i):
-                item = {"visibility": float(body.visibility[i])}
-                item["x"] = int(oneLM[0])
-                item["y"] = int(oneLM[1])
-                item["z"] = int(oneLM[2])
-#                print("item",item)
-                data.append(item)
-
-#        print("data",data)
-        jsonData=json.dumps(data)
-#        print("jsonData",jsonData)
-        
-        builder.add_arg(jsonData, arg_type='s')
-        msg = builder.build()
-        client.send(msg)
+#        print("body.presence ",body.presence)
+#        print("body.visibility ",body.visibility)
+        print("body.xyz ",body.xyz)
+        if body.presence[0] > 0.4:
+            data=[]
+            for i,oneLM in enumerate(body.landmarks):
+                if self.is_present(body, i):
+                    item = {"visibility": round(float(body.visibility[i]),4)}
+                    item["x"] = round(float((oneLM[0] - body.xyz[0]) * 0.001),4); #left right
+                    item["y"] = round(float((oneLM[1] - body.xyz[1]) * 0.001),4); #up down
+                    item["z"] = round(float((oneLM[2] - body.xyz[2]) * 0.001),4); #front back
+#                    item["x"] = round(float(oneLM[0] * 0.001),4);
+#                    item["y"] = round(float(oneLM[1] * 0.001),4);
+#                    item["z"] = round(float(oneLM[2] * 0.001),4);
+#                    print("item",item)
+                    data.append(item)
+#            print("len data ",len(data))
+#        if data:
+    #        print("data",data)
+            jsonData=json.dumps(data)
+    #        print("jsonData",jsonData)
+            builder.add_arg(int(len(data)), arg_type='i')
+            builder.add_arg(jsonData, arg_type='s')
+            msg = builder.build()
+            client.send(msg)
         
 #    def exit(self):
 #        if self.output:

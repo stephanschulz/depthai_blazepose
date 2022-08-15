@@ -112,18 +112,25 @@ class BlazeposeDepthai:
 #        device_info = dai.DeviceInfo("10.100.0.21")
 #        self.device = dai.Device(dai.Pipeline(), device_info)
         
-
+#        device_info = dai.DeviceInfo("10.100.0.21")
+#        self.device = dai.Device(self.create_pipeline(), device_info)
+        
+#        irState = self.device.setIrFloodLightBrightness(1000);
+#        print("setIrFloodLightBrightness",irState)
+        
+#        irLaser = self.device.setIrLaserDotProjectorBrightness(700);
+#        print("setIrLaserDotProjectorBrightness",irLaser)
 #        device_info = dai.DeviceInfo("10.100.0.21")
 #        self.device = dai.Device(device_info)
         
 #        self.xyz = False # not the same as the args.xyz passed in
-        self.xyz = xyz
+        self.xyz = False
 
         if input_src == None or input_src == "rgb" or input_src == "rgb_laconic":
             self.input_type = "rgb" # OAK* internal color camera
             self.laconic = input_src == "rgb_laconic" # Camera frames are not sent to the host      
             if xyz:
-                # Check if the device supports stereo
+#                 Check if the device supports stereo
                 cameras = self.device.getConnectedCameras()
                 if dai.CameraBoardSocket.LEFT in cameras and dai.CameraBoardSocket.RIGHT in cameras:
                     print("Warning: depth is available on this device, 'xyz' argument is used")
@@ -131,6 +138,8 @@ class BlazeposeDepthai:
                 else:
                     print("Warning: depth unavailable on this device, 'xyz' argument is ignored")
 
+#            self.xyz = True
+                    
             if internal_fps is None:            
                 if "full" in str(self.lm_model):
                     self.internal_fps = 18 if self.xyz else 20
@@ -202,7 +211,8 @@ class BlazeposeDepthai:
 #        self.device.devInfo("10.100.0.21");
         usb_speed = self.device.getUsbSpeed()
         self.device.startPipeline(self.create_pipeline())
-        print(f"Pipeline started - USB speed: {str(usb_speed).split('.')[-1]}")
+       
+#        print(f"Pipeline started - USB speed: {str(usb_speed).split('.')[-1]}")
 #        device_info = dai.DeviceInfo("10.100.0.21")
 #        self.device.startPipeline(self.create_pipeline(), device_info)
 
@@ -236,12 +246,6 @@ class BlazeposeDepthai:
         self.pd_input_length = 224
         self.lm_input_length = 256
 
-        irState = self.device.setIrFloodLightBrightness(1000);
-        print("setIrFloodLightBrightness",irState)
-        
-#        irLaser = self.device.setIrLaserDotProjectorBrightness(700);
-#        print("setIrLaserDotProjectorBrightness",irLaser)
-        
         # ColorCamera
         print("Creating Color Camera...")
         cam = pipeline.create(dai.node.ColorCamera) 
@@ -250,7 +254,7 @@ class BlazeposeDepthai:
         cam.setIspScale(self.scale_nd[0], self.scale_nd[1])
         cam.setFps(self.internal_fps)
         cam.setBoardSocket(dai.CameraBoardSocket.RGB)
-        
+          
 
         if self.crop:
             cam.setVideoSize(self.frame_size, self.frame_size)
