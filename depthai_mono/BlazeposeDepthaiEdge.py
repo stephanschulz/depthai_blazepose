@@ -273,13 +273,6 @@ class BlazeposeDepthai:
 #            mono_manip.initialConfig.setResize(300, 300)
             mono_manip.initialConfig.setFrameType(dai.RawImgFrame.Type.BGR888p)
             right.out.link(mono_manip.inputImage)
-        
-#            left_out = pipeline.create(dai.node.XLinkOut)
-#            left_out.setStreamName("left_out")
-#            left_out.input.setQueueSize(1)
-#            left_out.input.setBlocking(False)
-#            left.out.link(left_out.input)
-#            right.out.link(mono_manip.inputImage)
             
             mono_manip_out = pipeline.create(dai.node.XLinkOut)
             mono_manip_out.setStreamName("mono_manip_out")
