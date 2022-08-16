@@ -5,6 +5,8 @@
 #from BlazeposeRenderer_osc import BlazeposeRenderer
 from oscSender_osc import oscSender
 
+#Python3.8 demo_osc.py -e -v --oscIP "10.100.0.101" --oscPort 12345 --xyz
+
 import argparse
 
 parser = argparse.ArgumentParser()

@@ -71,6 +71,7 @@ class BlazeposeDepthai:
                 stats=False,               
                 internal_fps=None,
                 internal_frame_height=1080,
+                IR=1000,
                 trace=False,
                 force_detection=False):
 
@@ -81,10 +82,13 @@ class BlazeposeDepthai:
         self.rect_transf_scale = 1.25
         if lm_model is None or lm_model == "full":
             self.lm_model = LANDMARK_MODEL_FULL
+            print("LANDMARK_MODEL_FULL");
         elif lm_model == "lite":
             self.lm_model = LANDMARK_MODEL_LITE
+            print("LANDMARK_MODEL_LITE");
         elif lm_model == "heavy":
             self.lm_model = LANDMARK_MODEL_HEAVY
+            print("LANDMARK_MODEL_HEAVY");
         else:
             self.lm_model = lm_model
         print(f"Landmarks using blob file : {self.lm_model}")
@@ -101,6 +105,7 @@ class BlazeposeDepthai:
         self.trace = trace
         self.force_detection = force_detection
 
+        self.IrFloodLightBrightness = IR
         print("amount of getAllAvailableDevices", len(dai.Device.getAllAvailableDevices()))
         for oneDevice in dai.Device.getAllAvailableDevices():
             print(f"{oneDevice.getMxId()} {oneDevice.state}")
@@ -115,9 +120,10 @@ class BlazeposeDepthai:
 #        device_info = dai.DeviceInfo("10.100.0.21")
 #        self.device = dai.Device(self.create_pipeline(), device_info)
         
-        irState = self.device.setIrFloodLightBrightness(1000);
-        print("setIrFloodLightBrightness",irState)
-        
+#        print("self.device.setIrFloodLightBrightness(IR) ",IR);
+        irState = self.device.setIrFloodLightBrightness(self.IrFloodLightBrightness);
+#        print("setIrFloodLightBrightness",irState)
+        print("setIrFloodLightBrightness",self.IrFloodLightBrightness) 
 #        irLaser = self.device.setIrLaserDotProjectorBrightness(700);
 #        print("setIrLaserDotProjectorBrightness",irLaser)
 #        device_info = dai.DeviceInfo("10.100.0.21")
@@ -153,22 +159,29 @@ class BlazeposeDepthai:
 
             self.video_fps = self.internal_fps # Used when saving the output in a video file. Should be close to the real fps
             
+            #Select the camera sensor resolution: 1280×720, 1280×800, 640×400
+#THE_720_P, THE_800_P, THE_400_P
+
             if self.crop:
                 self.frame_size, self.scale_nd = mpu.find_isp_scale_params(internal_frame_height)
                 self.img_h = self.img_w = self.frame_size
                 self.pad_w = self.pad_h = 0
                 self.crop_w = (int(round(1920 * self.scale_nd[0] / self.scale_nd[1])) - self.img_w) // 2
-
+#                self.crop_w = (int(round(640 * self.scale_nd[0] / self.scale_nd[1])) - self.img_w) // 2
             else:
                 width, self.scale_nd = mpu.find_isp_scale_params(internal_frame_height * 1920 / 1080, is_height=False)
                 self.img_h = int(round(1080 * self.scale_nd[0] / self.scale_nd[1]))
                 self.img_w = int(round(1920 * self.scale_nd[0] / self.scale_nd[1]))
+#                width, self.scale_nd = mpu.find_isp_scale_params(internal_frame_height * 640 / 400, is_height=False)
+#                self.img_h = int(round(400 * self.scale_nd[0] / self.scale_nd[1]))
+#                self.img_w = int(round(640 * self.scale_nd[0] / self.scale_nd[1]))
+
                 self.pad_h = (self.img_w - self.img_h) // 2
                 self.pad_w = 0
                 self.frame_size = self.img_w
                 self.crop_w = 0
 
-            print(f"Internal camera image size: {self.img_w} x {self.img_h} - pad_h: {self.pad_h}")
+            print(f"Internal camera image size: {self.img_w} x {self.img_h} - pad_w: {self.pad_w} pad_h: {self.pad_h}")
 
         else:
             print("Invalid input source:", input_src)
@@ -209,7 +222,7 @@ class BlazeposeDepthai:
         #device_info = depthai.DeviceInfo("3.3.3") # USB port name
 #        with depthai.Device(pipeline, device_info) as device:
 #        self.device.devInfo("10.100.0.21");
-        usb_speed = self.device.getUsbSpeed()
+#        usb_speed = self.device.getUsbSpeed()
         self.device.startPipeline(self.create_pipeline())
        
 #        print(f"Pipeline started - USB speed: {str(usb_speed).split('.')[-1]}")
@@ -285,7 +298,11 @@ class BlazeposeDepthai:
 #            print(f"RGB calibration lens position: {calib_lens_pos}")
 #            cam.initialControl.setManualFocus(calib_lens_pos)
 
-            mono_resolution = dai.MonoCameraProperties.SensorResolution.THE_400_P
+#Select the camera sensor resolution: 1280×720, 1280×800, 640×400
+#THE_720_P, THE_800_P, THE_400_P
+
+            mono_resolution = dai.MonoCameraProperties.SensorResolution.THE_400_P #640×400
+#            mono_resolution = dai.MonoCameraProperties.SensorResolution.THE_720_P #640×400
             left = pipeline.createMonoCamera()
             left.setBoardSocket(dai.CameraBoardSocket.LEFT)
             left.setResolution(mono_resolution)
@@ -299,7 +316,7 @@ class BlazeposeDepthai:
             # Define mono camera Gray2BGR
             print("Creating Gray2BGR Camera...")
             mono_manip = pipeline.createImageManip()
-#            mono_manip.initialConfig.setResize(300, 300)
+#            mono_manip.initialConfig.setResize(self.frame_size)# setResize(640, 400)
             mono_manip.initialConfig.setFrameType(dai.RawImgFrame.Type.BGR888p)
             right.out.link(mono_manip.inputImage)
             
@@ -308,8 +325,8 @@ class BlazeposeDepthai:
             mono_manip_out.input.setQueueSize(1)
             mono_manip_out.input.setBlocking(False)
             mono_manip.out.link(mono_manip_out.input)
-            
-            print(f"Internal camera image size: {self.img_w} x {self.img_h} - pad_h: {self.pad_h}")
+#            print("mono_manip.getCvFrame.width ",mono_manip.inputImage.frame_size)
+            print(f"Internal camera image size: {self.img_w} x {self.img_h} - pad_w: {self.pad_w} pad_h: {self.pad_h}")
 #            https://docs.luxonis.com/projects/api/en/latest/samples/VideoEncoder/rgb_mono_encoding/
 #            cam_right_out = pipeline.create(dai.node.XLinkOut)
 #            cam_right_out.setStreamName("cam_right_out")
@@ -318,7 +335,8 @@ class BlazeposeDepthai:
 #            right.out.link(cam_right_out.input)
 
             stereo = pipeline.createStereoDepth()
-            stereo.setConfidenceThreshold(230)
+#            stereo.setConfidenceThreshold(230)
+            stereo.setConfidenceThreshold(40)
             # LR-check is required for depth alignment
             stereo.setLeftRightCheck(True)
             stereo.setDepthAlign(dai.CameraBoardSocket.RGB)
@@ -522,10 +540,10 @@ class BlazeposeDepthai:
             body.landmarks[:,1] -= self.pad_h
             for i in range(len(body.rect_points)):
                 body.rect_points[i][1] -= self.pad_h
-        # if self.pad_w > 0:
-        #     body.landmarks[:,0] -= self.pad_w
-        #     for i in range(len(body.rect_points)):
-        #         body.rect_points[i][0] -= self.pad_w  
+        if self.pad_w > 0:
+            body.landmarks[:,0] -= self.pad_w
+            for i in range(len(body.rect_points)):
+                body.rect_points[i][0] -= self.pad_w  
     
                 
     def next_frame(self):
